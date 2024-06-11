@@ -63,6 +63,9 @@ model User {
     accounts      Account[]
     sessions      Session[]
     posts         Post[]
+
+    // Связь с Player
+    games Player[]
 }
 
 model VerificationToken {
@@ -72,3 +75,66 @@ model VerificationToken {
 
     @@unique([identifier, token])
 }
+
+model Card {
+    id              Int        @id @default(autoincrement())
+    name            String
+    image           String?
+    backgroundColor String
+    pattern         String
+    patternColor    String
+    secondaryColor  String
+    tertiaryColor   String
+    GameCard        GameCard[]
+}
+
+model Game {
+    id          Int        @id @default(autoincrement())
+    playerCount Int
+    isActibe    Boolean    @default(true)
+    players     Player[]
+    cards       GameCard[]
+}
+
+model Player {
+    id                 Int @id @default(autoincrement())
+    userId             String
+    gameId             Int
+    revealedCardsCount Int @default(0)
+    timesRevealed      Int @default(0)
+
+    // Связь с User и Game
+    user     User       @relation(fields: [userId], references: [id])
+    game     Game       @relation(fields: [gameId], references: [id])
+    // Добавление обратных связей
+    issuedCards        GameCard[] @relation("IssuedPlayer")
+    revealedCards      GameCard[] @relation("RevealedPlayer")
+
+    @@unique([userId, gameId])
+}
+
+model GameCard {
+    id          Int            @id @default(autoincrement())
+    gameId      Int
+    cardId      Int
+    // status      CardStatusEnum @default(FREE)
+    status      String @default("FREE")
+    playerId    Int? // Связанный игрок, если карта выдана
+    revealerId  Int? // Игрок, который раскрыл карту
+    xCoordinate Int? // Координата X на поле
+    yCoordinate Int? // Координата Y на поле
+
+    // Связь с Game, Card, Player (игрок, которому выдана карта), Revealer (игрок, который раскрыл карту)
+    game     Game    @relation(fields: [gameId], references: [id])
+    card     Card    @relation(fields: [cardId], references: [id])
+    player   Player? @relation("IssuedPlayer", fields: [playerId], references: [id])
+    revealer Player? @relation("RevealedPlayer", fields: [revealerId], references: [id])
+
+    @@unique([gameId, cardId])
+}
+
+// enum CardStatusEnum {
+//     FREE
+//     ISSUED
+//     REVEALED
+// }
